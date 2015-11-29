@@ -5,7 +5,7 @@ Node.js vnc client for embedding into your own applications. Built from [js-vnc-
 
 #### Installation
 ```
-npm install simplevnc
+npm install git+https://github.com/iSchluff/simplevnc.git
 ```
 
 #### Run Example
