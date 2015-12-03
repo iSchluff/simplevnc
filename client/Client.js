@@ -372,6 +372,7 @@ function Client(screen) {
   this._event = new EventEmitter();
   this._screen = screen;
   this.on = this._event.on.bind(this._event);
+  this.removeListener = this._event.removeListener.bind(this._event);
 }
 
 Client.prototype._toRfbKeyCode = function (code, shift) {
@@ -417,7 +418,10 @@ Client.prototype._addSocketHandlers = function () {
       resolve();
     });
     self._socket.on('frame', function(frame) {
-      self._screen.drawRect(frame);
+      self._screen.drawFrame(frame);
+    });
+    self._socket.on('copyFrame', function(frame) {
+      self._screen.copyFrame(frame);
     });
   });
 };
@@ -441,11 +445,22 @@ Client.prototype.connect = function(config) {
 
   var io = require('socket.io-client');
   this._socket = io.connect(location.protocol + '//' + location.host, { 'force new connection': true });
-  this._socket.emit('init', {
+  var data = {
     host: config.host,
     port: config.port,
     password: config.password
-  });
+  };
+  this._socket.emit('init', data);
+  this._socket.on('reconnecting', function(attempt) {
+    console.log('reconnecting', attempt)
+  })
+  this._socket.on('reconnect_failed', function() {
+    console.log('reconnect failed')
+  })
+  this._socket.on('reconnect', function() {
+    console.log('reconnected')
+    this._socket.emit('init', data);
+  })
   return this._addSocketHandlers();
 };
 

@@ -23,21 +23,16 @@ function Screen(canvas) {
   this.removeListener = this._event.removeListener.bind(this._event);
 }
 
-Screen.prototype.drawRect = function(rect) {
+Screen.prototype.drawFrame = function(rect) {
   var image = rect.image;
+  var now = +new Date();
   switch(image.encoding) {
   case 'raw':
     var imageData = this._context.createImageData(rect.width, rect.height);
-    var src = image.data.data;
-    var data = imageData.data;
-    var offset = 0;
-    for(var i = 0; i<src.length; i += 3) {
-      data[offset++] = src[i];
-      data[offset++] = src[i + 1];
-      data[offset++] = src[i + 2];
-      data[offset++] = 0xFF;
-    }
+    imageData.data.set(new Uint8Array(image.data));
     this._context.putImageData(imageData, rect.x, rect.y);
+    var foo = +new Date();
+    var size = rect.width * rect.height;
     break;
 
   case 'png':
@@ -54,6 +49,11 @@ Screen.prototype.drawRect = function(rect) {
   default:
     throw new Error('unknown rect encoding:', image.encoding);
   }
+};
+
+Screen.prototype.copyFrame = function(rect) {
+  var imageData = this._context.getImageData(rect.src.x, rect.src.y, rect.width, rect.height);
+  this._context.putImageData(imageData, rect.x, rect.y)
 };
 
 Screen.prototype._scale = function() {

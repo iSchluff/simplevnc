@@ -20,19 +20,22 @@ var brgaToRgba = function(src){
     rgba[i] = src[i + 2];
     rgba[i + 1] = src[i + 1];
     rgba[i + 2] = src[i];
-    rgba[i + 3] = src[i + 3];
+    //rgba[i + 3] = src[i + 3];
+    rgba[i + 3] = 0xff;
   }
   return rgba;
 }
 
 /* Constructor */
-var Server = function(server){
+var Server = function(server, options){
   if(!server){
     throw new Error('SimpleVNC needs a httpServer instance');
     return;
   }
 
+  this.options = options || {};
   this.clients = [];
+  this.currentFrame = null;
   this.event = new EventEmitter();
   this.on = this.event.on.bind(this.event);
   this.io = io(server, {log: false});
@@ -44,15 +47,19 @@ Server.prototype.error = function(err){
     throw err
 }
 
+Server.prototype.extendFrame = function(){
+
+}
+
 Server.prototype.encodeFrame = function(rect, cb) {
-  // transmit small updates as raw frame data
-  if(/*rect.width * rect.height < 4000*/ false) {
+  // raw transmission
+  if(!this.options.png) {
     cb({
       encoding: 'raw',
-      data: brgaToRgb(rect.data)
+      data: brgaToRgba(rect.data)
     });
 
-  // encode bigger updates with png
+  // png encoded frames
   } else {
     var rgba = brgaToRgba(rect.data),
       buffers = [],
@@ -81,7 +88,8 @@ Server.prototype.addEventHandlers = function(client) {
   var self = this,
     socket = client.socket,
     rfbc = client.rfbc,
-    initialFrame = false;
+    initialFrame = false,
+    last = 0;
 
   var handleConnection = function() {
     rfbc.autoUpdate = true;
@@ -114,6 +122,9 @@ Server.prototype.addEventHandlers = function(client) {
     if(!initialFrame)
       initialFrame = true;
 
+    var now = +new Date();
+    last = now;
+
     var sendFrame = function(image){
       socket.emit('frame', {
         x: rect.x,
@@ -131,6 +142,13 @@ Server.prototype.addEventHandlers = function(client) {
       self.encodeFrame(rect, sendFrame);
       break;
     case rfb.encodings.copyRect:
+      socket.emit('copyFrame', {
+        x: rect.x,
+        y: rect.y,
+        src: rect.src,
+        width: rect.width,
+        height: rect.height
+      });
       // pseudo-rectangle
       // copy rectangle from rect.src.x, rect.src.y, rect.width, rect.height, to rect.x, rect.y
       break;
