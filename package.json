@@ -9,14 +9,14 @@
     "example": "browserify -i ./server/Server.js ./example/client.js > ./example/static/js/app.js"
   },
   "dependencies": {
-    "express": "^4.13.3",
-    "pngjs": "^2.0.0",
-    "rfb2": "^0.0.10",
-    "socket.io": "^1.3.7",
-    "socket.io-client": "^1.3.7"
+    "express": "^4.17.1",
+    "pngjs": "^2.3.1",
+    "rfb2": "0.0.10",
+    "socket.io": "^3.1.0",
+    "socket.io-client": "^3.1.0"
   },
   "devDependencies": {
-    "browserify": "^12.0.1"
+    "browserify": "^12.0.2"
   },
   "license": "MIT"
 }
