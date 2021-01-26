@@ -409,12 +409,17 @@ Client.prototype._addSocketHandlers = function () {
   return new Promise(function(resolve, reject) {
     var timeout = setTimeout(function() {
       self.disconnect();
-      reject();
+      reject(new Error("Connect timed out"));
     }, 2000);
+    self._interruptConnect = function(error) {
+      clearTimeout(timeout);
+      self.disconnect();
+      reject(error)
+    }
     self._socket.on('init', function(config) {
+      clearTimeout(timeout);
       self._screen.init(config.width, config.height);
       self._addScreenHandlers();
-      clearTimeout(timeout);
       resolve();
     });
     self._socket.on('frame', function(frame) {
@@ -435,11 +440,11 @@ Client.prototype.disconnect = function () {
   }
   this._screen.removeHandlers();
   this._socket.disconnect();
-  delete this._socket;
 };
 
 /* setup new socket.io connection */
 Client.prototype.connect = function(config) {
+  var self = this;
   if(this._socket)
     this.disconnect();
 
@@ -450,6 +455,15 @@ Client.prototype.connect = function(config) {
     port: config.port,
     password: config.password
   };
+  this._socket.on('error', function(error) {
+    if(!self._hasHandlers && self._interruptConnect) {
+      // still connecting
+      self._interruptConnect(error)
+    } else {
+      self.disconnect();
+      self._event.emit('error', error)
+    }
+  });
   this._socket.emit('init', data);
   this._socket.on('reconnecting', function(attempt) {
     console.log('reconnecting', attempt)

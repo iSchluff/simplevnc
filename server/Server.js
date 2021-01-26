@@ -5,7 +5,7 @@ var EventEmitter = require('events');
 
 /* Helper Functions */
 var brgaToRgb = function(src){
-  var rgb = new Buffer(src.length / 4 * 3);
+  var rgb = Buffer.allocUnsafe(src.length / 4 * 3);
   for (var i = 0, o = 0; i < src.length; i += 4) {
     rgb[o++] = src[i + 2];
     rgb[o++] = src[i + 1];
@@ -15,12 +15,11 @@ var brgaToRgb = function(src){
 }
 
 var brgaToRgba = function(src){
-  var rgba = new Buffer(src.length);
+  var rgba = Buffer.allocUnsafe(src.length)
   for (var i = 0; i < src.length; i += 4) {
     rgba[i] = src[i + 2];
     rgba[i + 1] = src[i + 1];
     rgba[i + 2] = src[i];
-    //rgba[i + 3] = src[i + 3];
     rgba[i + 3] = 0xff;
   }
   return rgba;
@@ -109,6 +108,7 @@ Server.prototype.addEventHandlers = function(client) {
   rfbc.on('connect', handleConnection);
   rfbc.on('error', function(error) {
     self.error(new Error('RFB error: ' + error.message));
+    socket.emit('error', error.message);
     self.disconnectClient(client);
   });
   rfbc.on('bell', socket.emit.bind(socket, 'bell'));
@@ -162,17 +162,19 @@ Server.prototype.addEventHandlers = function(client) {
 }
 
 Server.prototype.createConnection = function(config, socket) {
-  var rfbc;
-  try {
-    rfbc = rfb.createConnection({
-      host: config.host,
-      port: config.port,
-      password: config.password
-    });
-  } catch(error) {
-    self.error(new Error('RFB error: ' + error.message));
-  }
-  return rfbc;
+  return new Promise(function(resolve, reject) {
+    try {
+      var rfbc = rfb.createConnection({
+        host: config.host,
+        port: config.port,
+        password: config.password
+      });
+      resolve(rfbc);
+    } catch(err) {
+      self.error(new Error('RFB error: ' + err.message))
+      reject(err);
+    }
+  });
 }
 
 Server.prototype.connectClient = function(socket){
@@ -182,18 +184,22 @@ Server.prototype.connectClient = function(socket){
       config: config,
       socket: socket,
     };
-    var rfbc = client.rfbc = self.createConnection(config, socket);
-    self.addEventHandlers(client);
-    socket.on('mouse', function(event) {
-      rfbc.pointerEvent(event.x, event.y, event.button);
-    });
-    socket.on('keyboard', function(event) {
-      rfbc.keyEvent(event.keyCode, event.isDown);
-    });
-    socket.on('disconnect', function() {
-      self.disconnectClient(client);
-    });
-    self.event.emit('establishing', client);
+    self.createConnection(config, socket).then(function(rfbc) {
+      client.rfbc = rfbc;
+      self.addEventHandlers(client);
+      socket.on('mouse', function(event) {
+        rfbc.pointerEvent(event.x, event.y, event.button);
+      });
+      socket.on('keyboard', function(event) {
+        rfbc.keyEvent(event.keyCode, event.isDown);
+      });
+      socket.on('disconnect', function() {
+        self.disconnectClient(client);
+      });
+      self.event.emit('establishing', client);
+    }).catch(function(err) {
+      socket.emit('error', err);
+    })
   });
 }
 

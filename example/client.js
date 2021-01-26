@@ -8,7 +8,8 @@ var canvas = document.getElementById('screen'),
 var screenWrapper = document.getElementById('screen-wrapper'),
   formWrapper = document.getElementById('form-wrapper'),
   loginBtn = document.getElementById('login-btn'),
-  disconnectBtn = document.getElementById('disconnect-btn');
+  disconnectBtn = document.getElementById('disconnect-btn'),
+  errorBar = document.getElementById('error-bar');
 
 disconnectBtn.addEventListener('click', function() {
   client.disconnect();
@@ -27,5 +28,10 @@ loginBtn.addEventListener('click', function() {
   client.connect(config).then(function() {
     formWrapper.style.display = 'none';
     screenWrapper.style.display = 'block';
-  });
+    errorBar.classList.add("hide");
+  }).catch(function(error) {
+    console.error('Connect failed:', error);
+    errorBar.textContent = "Failed to connect";
+    errorBar.classList.remove("hide");
+  })
 }, false);

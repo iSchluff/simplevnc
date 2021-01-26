@@ -25,14 +25,11 @@ function Screen(canvas) {
 
 Screen.prototype.drawFrame = function(rect) {
   var image = rect.image;
-  var now = +new Date();
   switch(image.encoding) {
   case 'raw':
     var imageData = this._context.createImageData(rect.width, rect.height);
     imageData.data.set(new Uint8Array(image.data));
     this._context.putImageData(imageData, rect.x, rect.y);
-    var foo = +new Date();
-    var size = rect.width * rect.height;
     break;
 
   case 'png':
