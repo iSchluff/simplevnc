@@ -9,7 +9,7 @@
     "example": "browserify -i ./server/Server.js ./example/client.js > ./example/static/js/app.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "pngjs": "^2.3.1",
     "rfb2": "0.0.10",
     "socket.io": "^3.1.0",
