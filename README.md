@@ -14,7 +14,7 @@ npm run-script example
 node example/server.js
 ```
 
-Then open up http://localhost:8000 in your browser.
+Then open up http://localhost:8080 in your browser.
 
 ## Usage
 ##### Serverside
